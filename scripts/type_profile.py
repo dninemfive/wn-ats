@@ -3,7 +3,7 @@ from typing import Any, Self
 from ndf_parse import Mod
 from ndf_parse.model import List, ListRow, MemberRow, Object
 import ndf_parse.model.abc as abc
-
+import re
 
 class TypeAnnotation(object):
     def __init__(self: Self, type: str):
@@ -55,14 +55,30 @@ def get_all_ndf_files(mod: Mod, root_folder: str): # -> Generator[tuple[str, Lis
 def determine_types_in_list(list: List) -> set[str]:
     raise NotImplemented
 
-def is_type(s: str, t: type) -> bool:
+def is_type(x: Any, t: type) -> bool:
+    if isinstance(x, t):
+        return True
     try:
-        return isinstance(t(s), t)
+        return isinstance(t(str(x)), t)
     except:
         return False
 
+def strip_type(type_str: str) -> str:
+    return type_str.split("'")[1]
+
+PRIMITIVE_TYPES = [int, float] #, bool : apparently bool(any_str) is a bool??
+
 def determine_type(val: Any) -> str:
-    raise NotImplemented
+    for t in PRIMITIVE_TYPES:
+        if is_type(val, t):
+            return strip_type(str(t))
+    # ???
+    match = re.search(r'True', str(t))
+    print(f'match: {str(match)}')
+    if match is not None:
+        return 'bool'
+    if isinstance(val, Object):
+        return val.type
 
 def profile_members(obj: Object) -> dict[str, TypeAnnotation]:
     result: dict[str, TypeAnnotation]
@@ -85,9 +101,19 @@ def list_type(list: List) -> TypeAnnotation:
     pass
 
 seen_types = TypeSet()
-# mod = Mod("", "")
 
-s = "1.0"
-print(is_type(s, int))
-print(is_type(s, float))
-print(is_type(s, str))
+MOD_PATH = rf'C:\Program Files (x86)\Steam\steamapps\common\WARNO\Mods\default'
+
+mod = Mod(MOD_PATH, MOD_PATH)
+
+l = mod.edit(rf"GameData\Generated\Gameplay\Decks\Divisions.ndf", False).current_tree
+
+tests = [
+    "1",
+    "1.0",
+    "True",
+    "test",
+    l[0]
+]
+for item in tests:
+    print(str(item)[:15], determine_type(item))
