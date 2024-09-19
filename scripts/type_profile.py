@@ -73,7 +73,7 @@ def determine_type(val: Any) -> str:
         if is_type(val, t):
             return strip_type(str(t))
     # ???
-    match = re.search(r'True', str(t))
+    match = re.search('True', str(t))
     print(f'match: {str(match)}')
     if match is not None:
         return 'bool'
