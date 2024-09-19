@@ -1,15 +1,19 @@
 import os
 from typing import Any, Self
 from ndf_parse import Mod
-from ndf_parse.model import List, ListRow, MemberRow, Object
+from ndf_parse.model import List, ListRow, Map, MapRow, MemberRow, Object
 import ndf_parse.model.abc as abc
 import re
 
 class TypeAnnotation(object):
-    def __init__(self: Self, type: str):
-        self.types = set(type)
+    def __init__(self: Self, type: str | None = None):
+        self.types: set[str] = set()
+        if type is not None:
+            self.types.add(type)        
 
     def add(self: Self, type: str):
+        if type is None:
+            raise ValueError('type must not be None')
         self.types.add(type)
 
     def __str__(self: Self) -> str:
@@ -52,8 +56,11 @@ def get_all_ndf_files(mod: Mod, root_folder: str): # -> Generator[tuple[str, Lis
     for path in sorted(all_ndf):
         yield (path, mod.edit(path, save=False).current_tree)
 
-def determine_types_in_list(list: List) -> set[str]:
-    raise NotImplemented
+def determine_types_in_list(list: List) -> TypeAnnotation:
+    result = TypeAnnotation()
+    for item in list:
+        result.add(determine_type(item))
+    return result
 
 def is_type(x: Any, t: type) -> bool:
     if isinstance(x, t):
@@ -72,13 +79,13 @@ def determine_type(val: Any) -> str:
     for t in PRIMITIVE_TYPES:
         if is_type(val, t):
             return strip_type(str(t))
-    # ???
-    match = re.search('True', str(t))
-    print(f'match: {str(match)}')
-    if match is not None:
+    if re.search('^([Tt]rue|[Ff]alse)$', str(val)):
         return 'bool'
     if isinstance(val, Object):
         return val.type
+    if isinstance(val, (ListRow, MapRow, MemberRow)):
+        return determine_type(val.value)
+    return "str" # TODO: refptr determination?
 
 def profile_members(obj: Object) -> dict[str, TypeAnnotation]:
     result: dict[str, TypeAnnotation]
@@ -115,5 +122,4 @@ tests = [
     "test",
     l[0]
 ]
-for item in tests:
-    print(str(item)[:15], determine_type(item))
+print(determine_types_in_list(l))
