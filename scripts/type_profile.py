@@ -70,8 +70,10 @@ def is_type(x: Any, t: type) -> bool:
     except:
         return False
 
-def strip_type(type_str: str) -> str:
-    return type_str.split("'")[1]
+def strip_type(type: str | type) -> str:
+    if not isinstance(type, str):
+        type = str(type)
+    return type.split("'")[1]
 
 PRIMITIVE_TYPES = [int, float] #, bool : apparently bool(any_str) is a bool??
 
@@ -85,6 +87,8 @@ def determine_type(val: Any) -> str:
         return val.type
     if isinstance(val, (ListRow, MapRow, MemberRow)):
         return determine_type(val.value)
+    if isinstance(val, (List | Map)):
+        return f'{strip_type(type(val))}[{determine_types_in_list(val)}]'
     return "str" # TODO: refptr determination?
 
 def profile_members(obj: Object) -> dict[str, TypeAnnotation]:
@@ -115,11 +119,12 @@ mod = Mod(MOD_PATH, MOD_PATH)
 
 l = mod.edit(rf"GameData\Generated\Gameplay\Decks\Divisions.ndf", False).current_tree
 
-tests = [
-    "1",
-    "1.0",
-    "True",
-    "test",
-    l[0]
-]
-print(determine_types_in_list(l))
+try:
+    for current_dir, _, filenames in os.walk(MOD_PATH):
+        for filename in filenames:
+            filename = os.path.relpath(os.path.join(current_dir, filename), MOD_PATH)
+            if os.path.splitext(filename)[1] == '.ndf':
+                tree = mod.edit(filename, False, False).current_tree
+                print(filename, determine_type(tree))
+except:
+    pass
