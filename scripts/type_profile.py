@@ -1,9 +1,15 @@
 import os
+import logging
+import re
+import traceback
 from typing import Any, Self
+
+import ndf_parse.model.abc as abc
 from ndf_parse import Mod
 from ndf_parse.model import List, ListRow, Map, MapRow, MemberRow, Object, Template
-import ndf_parse.model.abc as abc
-import re
+# https://docs.python.org/3/library/logging.html
+logger = logging.getLogger(__name__)
+
 
 class TypeAnnotation(object):
     def __init__(self: Self, type: str | None = None):
@@ -31,6 +37,7 @@ class Type(object):
         else:
             self.dict[member_name] = TypeAnnotation(type)
 
+    @property
     def members(self: Self): # -> Generator[tuple[str, TypeSet]]
         for k, v in self.dict.items():
             yield (k, v)
@@ -43,7 +50,7 @@ class Type(object):
             yield '@dataclass'
             yield f'class {self.name}(object):'
             for k, v in self.members:
-                yield f'{k}: {str(v)}'
+                yield f'    {k}: {str(v)}'
         return "\n".join(generate_rows())
     
     def write(self: Self) -> None:
@@ -129,9 +136,12 @@ def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_
     elif isinstance(object, (ListRow, MapRow, MemberRow)):
         profile(object.value, global_types, current_file)
     else:
-        for item in object:
-            profile(item, global_types, current_file)
-
+        try:
+            for item in object:
+                profile(item, global_types, current_file)
+        # https://stackoverflow.com/a/4992124
+        except Exception as e:
+            logger.error(f'Failed to profile {strip_type(type(object))} {str(object)}: {traceback.format_exc()}')
 
 MOD_PATH = rf'C:\Program Files (x86)\Steam\steamapps\common\WARNO\Mods\default'
 
@@ -142,6 +152,10 @@ for current_dir, _, filenames in os.walk(MOD_PATH):
     for filename in filenames:
         filename = os.path.relpath(os.path.join(current_dir, filename), MOD_PATH)
         if os.path.splitext(filename)[1] == '.ndf':
-            tree = mod.edit(filename, False, False).current_tree
-            profile(tree, global_types, filename)
+            try:
+                with mod.edit(filename, False, False) as cur:
+                    profile(cur, global_types, filename)
+            # https://stackoverflow.com/a/4992124
+            except Exception as e:
+                logger.error(f'Error in {filename}: {traceback.format_exc()}')
 global_types.write_all()
