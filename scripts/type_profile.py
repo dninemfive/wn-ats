@@ -32,7 +32,7 @@ class Type(object):
         self.found_in_files: set[str] = set([current_file])
 
     def update(self: Self, member_name: str, type: str) -> None:
-        if member_name == "None":
+        if member_name is None:
             member_name = "None_"
         if member_name in self.dict:
             self.dict[member_name].add(type)
@@ -41,7 +41,12 @@ class Type(object):
 
     @property
     def unique_member_types(self: Self):
-        return sorted(set([str(v) for v in self.dict.values()]))
+        result = set()
+        for v in self.dict.values():
+            for t in v.types:
+                for s in re.split(r'[|]', t):
+                    result.add(s)
+        return sorted(result)
 
     @property
     def members(self: Self): # -> Generator[tuple[str, TypeSet]]
@@ -59,10 +64,9 @@ class Type(object):
     @property
     def ndf_type_string(self: Self) -> str:
         types = self.ndf_types
-        print("types", types)
         if len(types) < 1:
             return ''
-        type_lines = [f'from types.{x} import {x}' for x in types]
+        type_lines = [f'from ndf_types.{x} import {x}' for x in types]
         return '\n'.join([*type_lines, ''])
 
     @property
@@ -84,7 +88,7 @@ class Type(object):
     
     def write(self: Self) -> None:
         print(f'  {self.name}')
-        with open(f'types/{self.name}.py', 'w') as file:
+        with open(f'ndf_types/{self.name}.py', 'w') as file:
             file.write(str(self))
 
 class TypeSet(object):
@@ -169,7 +173,7 @@ def determine_type(val: Any) -> str:
     return "str" # TODO: refptr determination?
 
 def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_file: str, indent: int = 0) -> None:
-    print(f'{'  ' * indent}{strip_type_and_model(type(object))}')
+    # print(f'{'  ' * indent}{strip_type_and_model(type(object))}')
     if is_primitive(object):
         return
     if isinstance(object, Object):
@@ -187,13 +191,17 @@ def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_
             logger.error(f'failed to profile {strip_type_and_model(type(object))} {str(object)[:30]}: {str(e)}')
 
 MOD_PATH = rf'C:\Program Files (x86)\Steam\steamapps\common\WARNO\Mods\default'
+GENERATED_PATH = rf'{MOD_PATH}\GameData\Generated'
 
 mod = Mod(MOD_PATH, MOD_PATH)
 global_types = TypeSet()
 
-for current_dir, _, filenames in os.walk(MOD_PATH):
+count = 0
+for current_dir, _, filenames in os.walk(GENERATED_PATH):
     for filename in filenames:
-        filename = os.path.relpath(os.path.join(current_dir, filename), MOD_PATH)
+        filename = os.path.relpath(os.path.join(current_dir, filename), MOD_PATH)        
+        print(str(count).rjust(5), filename)
+        count += 1
         if os.path.splitext(filename)[1] == '.ndf':
             try:
                 with mod.edit(filename, False, False) as cur:
@@ -201,3 +209,10 @@ for current_dir, _, filenames in os.walk(MOD_PATH):
             except Exception as e:
                 logger.error(f'failed to load {filename}: {str(e)}')
 global_types.write_all()
+imports = []
+for _, _, filenames in os.walk('ndf_types'):
+    for filename in filenames:
+        imports.append(f'import ndf_types.{os.path.splitext(filename)[0]}')
+    break
+with open('ndf_types/__init__.py', 'w') as file:
+    file.write('\n'.join(imports))
