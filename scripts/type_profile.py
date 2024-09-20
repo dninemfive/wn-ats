@@ -34,13 +34,14 @@ class Type(object):
         self.dict: dict[str, TypeAnnotation] = {}
         self.found_in_files: set[str] = set([current_file])
 
-    def update(self: Self, member_name: str, type: str) -> None:
+    def update(self: Self, member_name: str, type: str, file: str) -> None:
         if member_name is None:
             member_name = "None_"
         if member_name in self.dict:
             self.dict[member_name].add(type)
         else:
             self.dict[member_name] = TypeAnnotation(type)
+        self.found_in_files.add(file)
 
     @property
     def unique_member_types(self: Self):
@@ -52,7 +53,7 @@ class Type(object):
         return sorted(result)
 
     @property
-    def members(self: Self): # -> Generator[tuple[str, TypeSet]]
+    def members(self: Self) -> list[tuple[str, TypeAnnotation]]:
         return [(k, v) for k, v in self.dict.items()]
 
     @property 
@@ -182,7 +183,7 @@ def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_
     if isinstance(object, Object):
         obj_type = global_types.add(object, current_file)
         for member in object:
-            obj_type.update(member.member, determine_type(member.value))
+            obj_type.update(member.member, determine_type(member.value), current_file)
             profile(member.value, global_types, current_file, indent + 1)
     elif isinstance(object, (ListRow, MapRow, MemberRow)):
         profile(object.value, global_types, current_file, indent + 1)
@@ -195,7 +196,7 @@ def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_
             logger.error(f'failed to profile {strip_type_and_model(type(object))} {str(object)[:30]}: {str(e)}')
 
 MOD_PATH = rf'C:\Program Files (x86)\Steam\steamapps\common\WARNO\Mods\default'
-GENERATED_PATH = rf'{MOD_PATH}\GameData\Generated'
+GENERATED_PATH = MOD_PATH # rf'{MOD_PATH}\GameData\Generated'
 
 mod = Mod(MOD_PATH, MOD_PATH)
 global_types = TypeSet()
@@ -230,4 +231,4 @@ for _, _, filenames in os.walk('ndf_types'):
     break
 with open('ndf_types/__init__.py', 'w') as file:
     file.write('\n'.join(imports))
-print(time_since(program_start))
+print(f"Generated {len(imports)} type summaries in", time_since(program_start))
