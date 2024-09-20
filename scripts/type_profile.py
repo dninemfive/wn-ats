@@ -212,7 +212,7 @@ count = 0
 for current_dir, _, filenames in os.walk(GENERATED_PATH):
     for filename in filenames:
         filename = os.path.relpath(os.path.join(current_dir, filename), MOD_PATH)        
-        print(f'{str(count).rjust(5)}    {filename.ljust(64)}', end='', flush=True)
+        print(f'{str(count).rjust(5)}    {filename.ljust(100)}', end='', flush=True)
         file_start = time_ns()
         count += 1
         if os.path.splitext(filename)[1] == '.ndf':
