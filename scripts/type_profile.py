@@ -44,8 +44,8 @@ class Type(object):
         result = set()
         for v in self.dict.values():
             for t in v.types:
-                for s in re.split(r'[|]', t):
-                    result.add(s)
+                for s in re.split(r'[\[\|\]]', t):
+                    result.add(s.strip())
         return sorted(result)
 
     @property
@@ -64,10 +64,11 @@ class Type(object):
     @property
     def ndf_type_string(self: Self) -> str:
         types = self.ndf_types
+        print("types:", types)
         if len(types) < 1:
             return ''
         type_lines = [f'from ndf_types.{x} import {x}' for x in types]
-        return '\n'.join([*type_lines, ''])
+        return '\n'.join(['', *type_lines, ''])
 
     @property
     def class_string(self: Self) -> str:
@@ -80,7 +81,6 @@ class Type(object):
                            '',
                            'from dataclasses import dataclass',
                            'from ndf_parse.model import List, ListRow, Map, MapRow, MemberRow, Object, Template',
-                           '',
                            self.ndf_type_string,
                            self.class_string])
         return result
@@ -149,7 +149,7 @@ def strip_type_and_model(type: str | type) -> str:
     return strip_type(type).removeprefix('ndf_parse.model.')
 
 def is_ndf_type(s: str) -> bool:
-    result = not (s in ["bool", "int", "float", "str"] or '[' in s or '|' in s or ']' in s)
+    result = len(s) > 0 and not (s in ["bool", "int", "float", "str", "List", "ListRow", "Map", "MapRow", "MemberRow", "Object", "Template"] or '[' in s or '|' in s or ']' in s)
     print(f'is_ndf_type({s}) = {result}')
     return result
 
@@ -167,9 +167,9 @@ def determine_type(val: Any) -> str:
     if isinstance(val, Object):
         return val.type
     if isinstance(val, (ListRow, MapRow, MemberRow)):
-        return f'{strip_type(type(val))}[{determine_type(val.value)}]'
+        return f'{strip_type_and_model(type(val))}[{determine_type(val.value)}]'
     if isinstance(val, (List | Map)):
-        return f'{strip_type(type(val))}[{determine_types_in_list(val)}]'
+        return f'{strip_type_and_model(type(val))}[{determine_types_in_list(val)}]'
     return "str" # TODO: refptr determination?
 
 def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_file: str, indent: int = 0) -> None:
