@@ -53,8 +53,7 @@ class Type(object):
 
     @property
     def members(self: Self): # -> Generator[tuple[str, TypeSet]]
-        for k, v in self.dict.items():
-            yield (k, v)
+        return [(k, v) for k, v in self.dict.items()]
 
     @property 
     def found_in_string(self: Self) -> str:
@@ -67,7 +66,7 @@ class Type(object):
     @property
     def ndf_type_string(self: Self) -> str:
         types = self.ndf_types
-        print("types:", types)
+        # print("types:", types)
         if len(types) < 1:
             return ''
         type_lines = [f'from ndf_types.{x} import {x}' for x in types]
@@ -75,9 +74,10 @@ class Type(object):
 
     @property
     def class_string(self: Self) -> str:
+        members_strs = [f'    {k}: {str(v)}' for k, v in self.members] if len(self.members) > 0 else ["    pass"]
         return '\n'.join(['@dataclass',
                          f'class {self.name}(object):',
-                         *[f'    {k}: {str(v)}' for k, v in self.members]])
+                         *members_strs])
     
     def __str__(self: Self) -> str:
         result = '\n'.join([self.found_in_string,
@@ -153,7 +153,7 @@ def strip_type_and_model(type: str | type) -> str:
 
 def is_ndf_type(s: str) -> bool:
     result = len(s) > 0 and not (s in ["bool", "int", "float", "str", "List", "ListRow", "Map", "MapRow", "MemberRow", "Object", "Template"] or '[' in s or '|' in s or ']' in s)
-    print(f'is_ndf_type({s}) = {result}')
+    # print(f'is_ndf_type({s}) = {result}')
     return result
 
 PRIMITIVE_TYPES = [int, float] #, bool : apparently bool(any_str) is a bool??
