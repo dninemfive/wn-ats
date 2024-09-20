@@ -169,7 +169,7 @@ def determine_type(val: Any) -> str:
     if isinstance(val, (ListRow, MapRow, MemberRow)):
         return f'{strip_type_and_model(type(val))}[{determine_type(val.value)}]'
     if isinstance(val, (List | Map)):
-        return f'{strip_type_and_model(type(val))}[{determine_types_in_list(val)}]'
+        return f'{strip_type_and_model(type(val))}[{determine_types_in_list(val)}]'.removesuffix('[]')
     return "str" # TODO: refptr determination?
 
 def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_file: str, indent: int = 0) -> None:
