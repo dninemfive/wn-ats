@@ -1,12 +1,15 @@
-import os
 import logging
+import os
 import re
 import traceback
+from time import time_ns
 from typing import Any, Self
 
 import ndf_parse.model.abc as abc
 from ndf_parse import Mod
-from ndf_parse.model import List, ListRow, Map, MapRow, MemberRow, Object, Template
+from ndf_parse.model import (List, ListRow, Map, MapRow, MemberRow, Object,
+                             Template)
+
 # https://docs.python.org/3/library/logging.html
 logger = logging.getLogger(__name__)
 
@@ -180,6 +183,7 @@ def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_
         obj_type = global_types.add(object, current_file)
         for member in object:
             obj_type.update(member.member, determine_type(member.value))
+            profile(member.value, global_types, current_file, indent + 1)
     elif isinstance(object, (ListRow, MapRow, MemberRow)):
         profile(object.value, global_types, current_file, indent + 1)
     else:
@@ -196,16 +200,26 @@ GENERATED_PATH = rf'{MOD_PATH}\GameData\Generated'
 mod = Mod(MOD_PATH, MOD_PATH)
 global_types = TypeSet()
 
+def time_since(start: int) -> str:
+    return f'{(time_ns() - start) / 1e9:.3f}s'.rjust(9)
+
+program_start = time_ns()
+for cur, _, filenames in os.walk('ndf_types'):
+    for filename in filenames:
+        os.remove(os.path.join(cur, filename))
+    break
 count = 0
 for current_dir, _, filenames in os.walk(GENERATED_PATH):
     for filename in filenames:
         filename = os.path.relpath(os.path.join(current_dir, filename), MOD_PATH)        
-        print(str(count).rjust(5), filename)
+        print(f'{str(count).rjust(5)}    {filename.ljust(64)}', end='', flush=True)
+        file_start = time_ns()
         count += 1
         if os.path.splitext(filename)[1] == '.ndf':
             try:
                 with mod.edit(filename, False, False) as cur:
                     profile(cur, global_types, filename)
+                print(f'{time_since(file_start)}'.rjust(9))
             except Exception as e:
                 logger.error(f'failed to load {filename}: {str(e)}')
 global_types.write_all()
@@ -216,3 +230,4 @@ for _, _, filenames in os.walk('ndf_types'):
     break
 with open('ndf_types/__init__.py', 'w') as file:
     file.write('\n'.join(imports))
+print(time_since(program_start))
