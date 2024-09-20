@@ -15,12 +15,12 @@ class TypeAnnotation(object):
     def __init__(self: Self, type: str | None = None):
         self.types: set[str] = set()
         if type is not None:
-            self.types.add(type)        
+            self.add(type)     
 
     def add(self: Self, type: str):
         if type is None:
             raise ValueError('type must not be None')
-        self.types.add(type)
+        self.types.add(strip_type_and_model(type))
 
     def __str__(self: Self) -> str:
         return " | ".join(s for s in sorted(self.types))
@@ -32,6 +32,8 @@ class Type(object):
         self.found_in_files: set[str] = set([current_file])
 
     def update(self: Self, member_name: str, type: str) -> None:
+        if member_name == "None":
+            member_name = "None_"
         if member_name in self.dict:
             self.dict[member_name].add(type)
         else:
@@ -46,24 +48,44 @@ class Type(object):
         for k, v in self.dict.items():
             yield (k, v)
 
+    @property 
+    def found_in_string(self: Self) -> str:
+        return "\n# ".join(['# Found in:', *self.found_in_files])
+    
+    @property
+    def ndf_types(self: Self):
+        return [x for x in self.unique_member_types if is_ndf_type(x)]
+
+    @property
+    def ndf_type_string(self: Self) -> str:
+        types = self.ndf_types
+        print("types", types)
+        if len(types) < 1:
+            return ''
+        type_lines = [f'from types.{x} import {x}' for x in types]
+        return '\n'.join([*type_lines, ''])
+
     @property
     def class_string(self: Self) -> str:
-        def generate_rows():
-            yield 'from dataclasses import dataclass'
-            yield 'from ndf_parse import List, ListRow, Map, MapRow, MemberRow, Object, Template'
-            yield ''
-            for t in self.unique_member_types:
-                yield f'from types import {t}'
-            yield ''
-            yield '@dataclass'
-            yield f'class {self.name}(object):'
-            for k, t in self.members:
-                yield f'    {k}: {str(t)}'
-        return "\n".join(generate_rows())
+        return '\n'.join(['@dataclass',
+                         f'class {self.name}(object):',
+                         *[f'    {k}: {str(v)}' for k, v in self.members]])
+    
+    def __str__(self: Self) -> str:
+        result = '\n'.join([self.found_in_string,
+                           '',
+                           'from dataclasses import dataclass',
+                           'from ndf_parse.model import List, ListRow, Map, MapRow, MemberRow, Object, Template',
+                           '',
+                           self.ndf_type_string,
+                           self.class_string])
+        return result
+        
     
     def write(self: Self) -> None:
+        print(f'  {self.name}')
         with open(f'types/{self.name}.py', 'w') as file:
-            file.write(self.class_string)
+            file.write(str(self))
 
 class TypeSet(object):
     def __init__(self: Self):
@@ -83,6 +105,7 @@ class TypeSet(object):
         return self.types[type_name]
     
     def write_all(self: Self) -> None:
+        print("Writing all types...")
         for _, t in self.types.items():
             t.write()
     
@@ -113,10 +136,18 @@ def is_type(x: Any, t: type) -> bool:
 def strip_type(type: str | type) -> str:
     if not isinstance(type, str):
         type = str(type)
-    return type.split("'")[1]
+    try:
+        return type.split("'")[1]
+    except:
+        return type
 
 def strip_type_and_model(type: str | type) -> str:
     return strip_type(type).removeprefix('ndf_parse.model.')
+
+def is_ndf_type(s: str) -> bool:
+    result = not (s in ["bool", "int", "float", "str"] or '[' in s or '|' in s or ']' in s)
+    print(f'is_ndf_type({s}) = {result}')
+    return result
 
 PRIMITIVE_TYPES = [int, float] #, bool : apparently bool(any_str) is a bool??
 
@@ -132,12 +163,13 @@ def determine_type(val: Any) -> str:
     if isinstance(val, Object):
         return val.type
     if isinstance(val, (ListRow, MapRow, MemberRow)):
-        return f'{strip_type(val)}[{determine_type(val.value)}]'
+        return f'{strip_type(type(val))}[{determine_type(val.value)}]'
     if isinstance(val, (List | Map)):
         return f'{strip_type(type(val))}[{determine_types_in_list(val)}]'
     return "str" # TODO: refptr determination?
 
-def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_file: str) -> None:
+def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_file: str, indent: int = 0) -> None:
+    print(f'{'  ' * indent}{strip_type_and_model(type(object))}')
     if is_primitive(object):
         return
     if isinstance(object, Object):
@@ -145,14 +177,14 @@ def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_
         for member in object:
             obj_type.update(member.member, determine_type(member.value))
     elif isinstance(object, (ListRow, MapRow, MemberRow)):
-        profile(object.value, global_types, current_file)
+        profile(object.value, global_types, current_file, indent + 1)
     else:
         try:
             for item in object:
-                profile(item, global_types, current_file)
+                profile(item, global_types, current_file, indent + 1)
         # https://stackoverflow.com/a/4992124
-        except:
-            logger.error(f'failed to profile {strip_type_and_model(type(object))} {str(object)[:30]}')
+        except Exception as e:
+            logger.error(f'failed to profile {strip_type_and_model(type(object))} {str(object)[:30]}: {str(e)}')
 
 MOD_PATH = rf'C:\Program Files (x86)\Steam\steamapps\common\WARNO\Mods\default'
 
@@ -166,6 +198,6 @@ for current_dir, _, filenames in os.walk(MOD_PATH):
             try:
                 with mod.edit(filename, False, False) as cur:
                     profile(cur, global_types, filename)
-            except:
-                logger.error(f'failed to load {filename}')
+            except Exception as e:
+                logger.error(f'failed to load {filename}: {str(e)}')
 global_types.write_all()
