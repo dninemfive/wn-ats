@@ -38,6 +38,10 @@ class Type(object):
             self.dict[member_name] = TypeAnnotation(type)
 
     @property
+    def unique_member_types(self: Self):
+        return sorted(set([str(v) for v in self.dict.values()]))
+
+    @property
     def members(self: Self): # -> Generator[tuple[str, TypeSet]]
         for k, v in self.dict.items():
             yield (k, v)
@@ -46,11 +50,15 @@ class Type(object):
     def class_string(self: Self) -> str:
         def generate_rows():
             yield 'from dataclasses import dataclass'
+            yield 'from ndf_parse import List, ListRow, Map, MapRow, MemberRow, Object, Template'
+            yield ''
+            for t in self.unique_member_types:
+                yield f'from types import {t}'
             yield ''
             yield '@dataclass'
             yield f'class {self.name}(object):'
-            for k, v in self.members:
-                yield f'    {k}: {str(v)}'
+            for k, t in self.members:
+                yield f'    {k}: {str(t)}'
         return "\n".join(generate_rows())
     
     def write(self: Self) -> None:
@@ -107,6 +115,9 @@ def strip_type(type: str | type) -> str:
         type = str(type)
     return type.split("'")[1]
 
+def strip_type_and_model(type: str | type) -> str:
+    return strip_type(type).removeprefix('ndf_parse.model.')
+
 PRIMITIVE_TYPES = [int, float] #, bool : apparently bool(any_str) is a bool??
 
 def is_primitive(val: Any) -> bool:
@@ -121,7 +132,7 @@ def determine_type(val: Any) -> str:
     if isinstance(val, Object):
         return val.type
     if isinstance(val, (ListRow, MapRow, MemberRow)):
-        return determine_type(val.value)
+        return f'{strip_type(val)}[{determine_type(val.value)}]'
     if isinstance(val, (List | Map)):
         return f'{strip_type(type(val))}[{determine_types_in_list(val)}]'
     return "str" # TODO: refptr determination?
@@ -140,8 +151,8 @@ def profile(object: Object | abc.Row | abc.List, global_types: TypeSet, current_
             for item in object:
                 profile(item, global_types, current_file)
         # https://stackoverflow.com/a/4992124
-        except Exception as e:
-            logger.error(f'Failed to profile {strip_type(type(object))} {str(object)}: {traceback.format_exc()}')
+        except:
+            logger.error(f'failed to profile {strip_type_and_model(type(object))} {str(object)[:30]}')
 
 MOD_PATH = rf'C:\Program Files (x86)\Steam\steamapps\common\WARNO\Mods\default'
 
@@ -155,7 +166,6 @@ for current_dir, _, filenames in os.walk(MOD_PATH):
             try:
                 with mod.edit(filename, False, False) as cur:
                     profile(cur, global_types, filename)
-            # https://stackoverflow.com/a/4992124
-            except Exception as e:
-                logger.error(f'Error in {filename}: {traceback.format_exc()}')
+            except:
+                logger.error(f'failed to load {filename}')
 global_types.write_all()
