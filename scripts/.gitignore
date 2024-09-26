@@ -54,3 +54,5 @@ env.bak/
 venv.bak/
 
 docker-compose.debug.yml
+
+type_profile/ndf_types/*
