@@ -1,0 +1,321 @@
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_Crew_GER
+	Sniper FJ DDR
+	Sniper Fern RFA
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_Crew_SOVIET
+	Sniper Spetsnaz SOV
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_Crew_UK
+	Sniper UK
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_Crew_US
+	Sniper US
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_FR
+	Chasseurs CMD FR
+	Chasseurs FR
+	Commandos FR
+	Engineers AT BEL
+	Engineers BEL
+	Engineers CMD BEL
+	Engineers Flam BEL
+	Escorte FR
+	Gendarmerie FR
+	Groupe AT FR
+	Groupe AT para FR
+	LRRP BEL
+	LRRP FR
+	MANPAD Mistral BEL
+	MANPAD Mistral FR
+	MANPAD Mistral para FR
+	Mech Rifles AT BEL
+	Mech Rifles CMD BEL
+	Mech Rifles MG BEL
+	Para CMD FR
+	Para FR
+	Para Legion FR
+	Para Marine FR
+	Para Sapeurs CMD FR
+	Para Sapeurs FR
+	Para Sapeurs Flam FR
+	Reserve BEL
+	Reserviste FR
+	Rifles APILAS FR
+	Rifles AT BEL
+	Rifles Aero CMD FR
+	Rifles Aero FR
+	Rifles BEL
+	Rifles CMD BEL
+	Rifles CMD FR
+	Rifles DMR FR
+	Rifles FR
+	SAS FR
+	SAS Sniper FR
+	Sapeurs CMD FR
+	Sapeurs FR
+	Sapeurs Flam FR
+	Scout AT BEL
+	Scout BEL
+	Scout FR
+	Scout para FR
+	Sniper ESR BEL
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_GER
+	BGS RFA
+	BGS hvy RFA
+	Engineers AGI DDR
+	Engineers AT RFA
+	Engineers CMD DDR
+	Engineers CMD RFA
+	Engineers DDR
+	Engineers Flam DDR
+	Engineers Flam RFA
+	Engineers Naval CMD DDR
+	Engineers Naval DDR
+	Engineers Naval Flam DDR
+	Engineers RFA
+	Engineers Reserve RFA
+	Fallschirm B1 RFA
+	Fallschirm RFA
+	Fallschirmjager CMD DDR
+	Fallschirmjager CMD RFA
+	Fallschirmjager DDR
+	Fallschirmjager HMG DDR
+	Fallschirmjager Metys DDR
+	Fallschirmjager Scout RFA
+	Feldgendarmerie RFA
+	Fernspaher RFA
+	Grenzer CMD DDR
+	Grenzer DDR
+	Grenzer Flam DDR
+	Grenzer Mot DDR
+	Groupe AT Wach DDR
+	HeimatschutzJager RFA
+	HvyScout DDR
+	Jager Aufk RFA
+	Jager CMD RFA
+	Jager Carl RFA
+	Jager RFA
+	Jager noAT RFA
+	KdA CMD DDR
+	KdA DDR
+	Luftsturmjager CMD DDR
+	Luftsturmjager DDR
+	Luftsturmjager Metis DDR
+	MANPAD Igla DDR
+	MANPAD Redeye RFA
+	MANPAD Redeye US
+	MANPAD Strela 2M DDR
+	MANPAD Strela 2M FJ DDR
+	MP DDR
+	MotRifles BTR DDR
+	MotRifles CMD DDR
+	MotRifles DDR
+	MotRifles HMG DDR
+	MotRifles Metis DDR
+	MotRifles SVD DDR
+	MotRifles Strela DDR
+	MotSchutzen DDR
+	Panzergrenadier APC RFA
+	Panzergrenadier CMD RFA
+	Panzergrenadier IFV RFA
+	PzGrenadier RFA
+	Reserve CMD DDR
+	Reserve DDR
+	Reserve HMG DDR
+	Reserve Polizei RFA
+	SEK RFA
+	Scout DDR
+	Scout FJ DDR
+	Scout KdA DDR
+	Scout LRRP DDR
+	Scout RFA
+	Scout Reserve DDR
+	Scout Wach DDR
+	Security DDR
+	Security RFA
+	Volkspolizei CMD DDR
+	Volkspolizei DDR
+	Wachregiment CMD DDR
+	Wachregiment DDR
+	Wachregiment RPG DDR
+	Wachregiment SMG DDR
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_SOVIET
+	DShV Afgantsy SOV
+	DShV CMD SOV
+	DShV HMG SOV
+	DShV Hvy SOV
+	DShV Metis SOV
+	DShV RPG16 SOV
+	DShV SOV
+	Engineers CMD DShV SOV
+	Engineers CMD SOV
+	Engineers CMD TTsko SOV
+	Engineers CMD VDV SOV
+	Engineers DShV SOV
+	Engineers Flam DShV SOV
+	Engineers Flam SOV
+	Engineers Flam TTsko SOV
+	Engineers Flam VDV SOV
+	Engineers Naval Scout DDR
+	Engineers SOV
+	Engineers Scout SOV
+	Engineers Scout TTsko SOV
+	Engineers TTsko SOV
+	Engineers VDV SOV
+	FireSupport SOV
+	FireSupport TTsko SOV
+	HvyScout DShV SOV
+	HvyScout SOV
+	HvyScout TTsko SOV
+	MANPAD Igla DShV SOV
+	MANPAD Igla SOV
+	MANPAD Igla TTsko SOV
+	MANPAD Igla VDV SOV
+	MP Combat SOV
+	MP SOV
+	MotRifles BTR SOV
+	MotRifles BTR TTsko SOV
+	MotRifles CMD POL
+	MotRifles CMD SOV
+	MotRifles CMD TTsko SOV
+	MotRifles HMG SOV
+	MotRifles HMG TTsko SOV
+	MotRifles Metis SOV
+	MotRifles Metis TTsko SOV
+	MotRifles POL
+	MotRifles RPG22 SOV
+	MotRifles SOV
+	MotRifles SVD POL
+	MotRifles TTsko SOV
+	Scout DShV SOV
+	Scout LRRP SOV
+	Scout SOV
+	Scout Spetsnaz SOV
+	Scout SpetsnazGRU Stinger SOV
+	Scout TTsko SOV
+	Scout VDV SOV
+	Security SOV
+	Spetsnaz CMD SOV
+	Spetsnaz FireSupport SOV
+	Spetsnaz SOV
+	VDV Afgantsy SOV
+	VDV CMD SOV
+	VDV HMG SOV
+	VDV Mech SOV
+	VDV Metis SOV
+	VDV SOV
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_UK
+	AT Group Gurkhas UK
+	AT Group TA UK
+	Airmobile CMD UK
+	Airmobile MILAN UK
+	Airmobile Mot CMD UK
+	Airmobile Mot UK
+	Airmobile UK
+	Engineers AT UK
+	Engineers Airmobile UK
+	Engineers CMD UK
+	Engineers TA UK
+	Engineers UK
+	Gun Group TA UK
+	Gun Group UK
+	LRRP UK
+	MANPAD Blowpipe UK
+	MANPAD Javelin UK
+	Paratroopers CMD UK
+	Paratroopers MILAN TA UK
+	Paratroopers TA UK
+	Pioneer UK
+	RMP UK
+	Rifles AT UK
+	Rifles Berlin UK
+	Rifles CMD UK
+	Rifles Gurkhas CMD UK
+	Rifles Gurkhas UK
+	Rifles RAF UK
+	Rifles UK
+	SAS UK
+	Scout AT UK
+	Scout Airmobile UK
+	Scout TA UK
+	Scout UK
+	Security UK
+	Territorial CMD UK
+	Territorial UK
+$/GFX/Sound/DepictionOperator_MovementSound_SM_Infanterie_US
+	Aero half AT4 US
+	Aero half CMD US
+	Aero half Dragon US
+	AeroEngineer CMD US
+	AeroEngineers US
+	AeroRifles AB US
+	AeroRifles AT4 US
+	AeroRifles CMD US
+	AeroRifles Dragon US
+	AeroRifles US
+	Airborne CMD US
+	Airborne Dragon US
+	Airborne Engineer CMD US
+	Airborne Engineers Flash US
+	Airborne Engineers US
+	Airborne HMG US
+	Airborne MP RCL US
+	Airborne MP US
+	Airborne Scout US
+	Airborne US
+	Airborne half Dragon US
+	Airborne half LAW US
+	Alfa Group SOV
+	DeltaForce US
+	Engineer CMD US
+	Engineers Dragon US
+	Engineers Flash US
+	Engineers US
+	Fallschirmjager FalseFlag CMD DDR
+	Fallschirmjager FalseFlag DDR
+	Fallschirmjager FlaseFlag Demo DDR
+	GreenBerets CMD US
+	GreenBerets MP5 US
+	GreenBerets ODA US
+	GreenBerets US
+	HvyScout NG Dragon US
+	HvyScout NG US
+	KSK18 DDR
+	LRRP Aero US
+	LRRP CEWI US
+	LRRP US
+	LightRifles CMD US
+	LightRifles LAW US
+	LightRifles RCL US
+	MANPAD Stinger C Aero US
+	MANPAD Stinger C US
+	MANPAD Stinger C para US
+	MANPAD Stinger NG US
+	MP BEL
+	MP CMD US
+	MP Combat US
+	MP RCL US
+	MP US
+	NatGuard CMD US
+	NatGuard Dragon US
+	NatGuard Engineers CMD US
+	NatGuard Engineers Flam US
+	NatGuard Engineers M67 US
+	NatGuard Engineers US
+	NatGuard LAW US
+	NatGuard M67 US
+	Ranger Dragon US
+	Ranger US
+	Ranger tuto US
+	Rangers CMD US
+	Rifles CMD US
+	Rifles Cavalry US
+	Rifles HMG US
+	Rifles LAW US
+	Rifles US
+	Rifles half AT4 US
+	Rifles half CMD NG US
+	Rifles half CMD US
+	Rifles half Dragon NG US
+	Rifles half Dragon US
+	Rifles half LAW NG US
+	Rifles half LAW US
+	Scout Aero US
+	Scout NG US
+	Scout US
