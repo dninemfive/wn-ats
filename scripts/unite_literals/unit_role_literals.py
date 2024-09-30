@@ -21,42 +21,38 @@ def is_object_of_type(item: Any, type: str) -> bool:
     return isinstance(item, Object) and item.type == type
 
 program_start = time_ns()
-values: defaultdict[str, set[str]] = defaultdict(lambda: set())
-values_reverse: defaultdict[str, set[str]] = defaultdict(lambda: set())
+dicts: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(lambda: defaultdict(lambda: set()))
+# dicts_reverse: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(lambda: defaultdict(lambda: set()))
+
+def add(dict: str, k: str, v: str):
+    dicts[dict][v].add(k)
+    # dicts_reverse[dict][v].add(k)
+
 with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
+    print(time_since(program_start))
     for unit in file:
         # name: str = unit.value.by_member('ClassNameForDebug').value
         # print(name)
         for module in unit.value.by_member('ModulesDescriptors').value:
             module = module.value
             if isinstance(module, Object) and module.type == 'TUnitUIModuleDescriptor':
-                unit_role, menu_icon = module.by_member('UnitRole').value, module.by_member('MenuIconTexture').value
-                values[unit_role].add(menu_icon)
-                values_reverse[menu_icon].add(unit_role)
+                unit_role = module.by_member('UnitRole').value
+                menu_icon = module.by_member('MenuIconTexture').value
+                type_strategic_count = module.by_member('TypeStrategicCount').value
+                add('UnitRoles_to_MenuIconTextures', unit_role, menu_icon)
+                add('UnitRoles_to_TypeStrategicCounts', unit_role, type_strategic_count)
+
+def summarize(_dict: defaultdict[str, set[str]]) -> Iterable[str]:
+    asdf: defaultdict[str, set[str]] = defaultdict(lambda: set())
+    for k, v in _dict.items():
+        new_key = ', '.join(sorted(v))
+        asdf[new_key].add(k)
+
+    for k in sorted(asdf.keys()):
+        yield f'{k}: {', '.join(sorted(asdf[k]))}'
 
 
-
-values_reverse_unique: defaultdict[str, set[str]] = defaultdict(lambda: set())
-values_reverse_all: set[str] = set()
-
-for k, v in values_reverse.items():
-    if all([x in v for x in values.keys()]):
-        values_reverse_all.add(k)
-    else:
-        values_reverse_unique[k] = v
-
-def lines(_dict: defaultdict[str, set[str]]) -> Iterable[str]:
-    for k in sorted(_dict.keys()):
-        yield k
-        for v in sorted(_dict[k]):
-            yield f'\t{v}'
-
-with open(os.path.join(FOLDER, 'UnitRoles.data'), 'w') as file:
-    file.write("\n".join(lines(values)))
-with open(os.path.join(FOLDER, 'UnitRoles.reverse.unique.data'), 'w') as file:
-    file.write('\n'.join(lines(values_reverse_unique)))
-with open(os.path.join(FOLDER, 'UnitRoles.reverse.all.data'), 'w') as file:
-    file.write('\n'.join(sorted(values_reverse_all)))
-with open(os.path.join(FOLDER, 'UnitRole.txt'), 'w') as file:
-    file.write('\n'.join(sorted(values.keys())))
+for name, dict in dicts.items():
+    with open(os.path.join(FOLDER, f'{name}.data'), 'w') as file:
+        file.write('\n'.join(summarize(dict)))
 print(time_since(program_start))
