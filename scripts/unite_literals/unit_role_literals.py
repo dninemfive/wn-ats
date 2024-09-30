@@ -1,5 +1,5 @@
 from ast import List
-from collections import defaultdict
+from collections import Counter, defaultdict
 import os
 from time import time_ns
 from typing import Any, Iterable
@@ -17,42 +17,39 @@ FOLDER = 'unite_literals'
 def time_since(start: int) -> str:
     return f'{(time_ns() - start) / 1e9:.3f}s'
 
-def is_object_of_type(item: Any, type: str) -> bool:
-    return isinstance(item, Object) and item.type == type
-
 program_start = time_ns()
-dicts: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(lambda: defaultdict(lambda: set()))
-# dicts_reverse: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(lambda: defaultdict(lambda: set()))
 
-def add(dict: str, k: str, v: str):
-    dicts[dict][v].add(k)
-    # dicts_reverse[dict][v].add(k)
+dicts: defaultdict[str, Counter[str]] = defaultdict(lambda: Counter())
 
 with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
     print(time_since(program_start))
     for unit in file:
         # name: str = unit.value.by_member('ClassNameForDebug').value
         # print(name)
+        factory: str = 'None'
         for module in unit.value.by_member('ModulesDescriptors').value:
             module = module.value
+            if isinstance(module, Object) and module.type == 'TProductionModuleDescriptor':
+                factory = module.by_member('Factory').value.split('/')[1]
             if isinstance(module, Object) and module.type == 'TUnitUIModuleDescriptor':
                 unit_role = module.by_member('UnitRole').value
                 menu_icon = module.by_member('MenuIconTexture').value
                 type_strategic_count = module.by_member('TypeStrategicCount').value
-                add('UnitRoles_to_MenuIconTextures', unit_role, menu_icon)
-                add('UnitRoles_to_TypeStrategicCounts', unit_role, type_strategic_count)
+                dicts[factory][unit_role] += 1
 
-def summarize(_dict: defaultdict[str, set[str]]) -> Iterable[str]:
-    asdf: defaultdict[str, set[str]] = defaultdict(lambda: set())
+columns = ["'tank_A'",
+           "'tank_B'",
+           "'tank_C'",
+           "'tank_D'"]
+
+def rows(_dict: defaultdict[str, set[str]]) -> Iterable[str]:
     for k, v in _dict.items():
-        new_key = ', '.join(sorted(v))
-        asdf[new_key].add(k)
+        line = k
+        for col in columns:
+            line += f'\t{v[col]}'
+        yield line
+    
 
-    for k in sorted(asdf.keys()):
-        yield f'{k}: {', '.join(sorted(asdf[k]))}'
-
-
-for name, dict in dicts.items():
-    with open(os.path.join(FOLDER, f'{name}.data'), 'w') as file:
-        file.write('\n'.join(summarize(dict)))
+with open(os.path.join(FOLDER, f'factory_to_role.tsv.data'), 'w') as file:
+    file.write('\n'.join(rows(dicts)))
 print(time_since(program_start))
