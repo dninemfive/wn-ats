@@ -34,6 +34,8 @@ for k in sorted(values.keys()):
     for v in sorted(values[k]):
         lines.append(f'\t{v}')
 
-with open('UnitRole.txt', 'w') as file:
+with open('UnitRoles.data', 'w') as file:
     file.write("\n".join(lines))
+with open('UnitRole.txt', 'w') as file:
+    file.write('\n'.join(sorted(values.keys())))
 print(time_since(program_start))
