@@ -22,38 +22,51 @@ def is_object_of_type(item: Any, type: str) -> bool:
 program_start = time_ns()
 vars: defaultdict[str, set[str]] = defaultdict(lambda: set())
 
-def add(unit: ListRow, *targets: tuple[str, list[str]]) -> str:
+def strip_prefix(s: str, prefix: str) -> str:
+    if s.startswith(prefix):
+        s = s[len(prefix):]
+    else:
+        print(f"{s} does not start with {prefix}!")
+
+def add(unit: ListRow, *targets: tuple[str, list[str | tuple[str, str]]]) -> str:
     for module_row in unit.value.by_member('ModulesDescriptors').value:
         module = module_row.value
         if isinstance(module, Object):
             for type, members in targets:
                 if module.type == type:
                     for member in members:
-                        vars[f'{type}.{member}'].add(module.by_member(member).value)
+                        if isinstance(member, str):
+                            vars[f'{type}.{member}'].add(module.by_member(member).value)
+                        else:
+                            member, prefix = member
+                            vars[f'{type}.{member}'].add(strip_prefix(module.by_member(member).value, prefix))
 
 with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
     print(time_since(program_start))
     for unit in file:
         add(unit,  ('TTypeUnitModuleDescriptor',
-                        ['Nationalite',
+                        [('Nationalite', 'ENationalite/'),
                          'MotherCountry',
                          'AcknowUnitType',
                          'TypeUnitFormation']),
                    ('TProductionModuleDescriptor',
-                        ['Factory']),
+                        [('Factory', 'EDefaultFactories/')]),
                    ('TUnitUIModuleDescriptor',
                         ['UnitRole',
                          'InfoPanelConfigurationToken',
-                         'TypeStrategicCount']))
+                         ('TypeStrategicCount', 'ETypeStrategicDetailedCount/')]))
 
 
 def literal_line(name: str, values: set[str]) -> str:
     def quote(s: str) -> str:
-        if "'" in s:
-            return f'"{s}"'
-        else:
-            return f"'{s}'"
-    return f'{f'type {name.split('.')[-1]}'.ljust(40)} = Literal[{', '.join([quote(s) for s in values])}]'
+        return f"'{s}'"
+    def unquote(s: str) -> str:
+        if s.startswith("'"):
+            s = s[1:]
+        if s.endswith("'"):
+            s = s[:-1]
+        return s
+    return f'{f'type {name.split('.')[-1]}'.ljust(40)} = Literal[{', '.join([quote(unquote(s)) for s in values])}]'
 
 with open(os.path.join(FOLDER, f'literals.py.data'), 'w') as file:
     file.write('\n'.join([literal_line(k, v) for k, v in vars.items()]))
