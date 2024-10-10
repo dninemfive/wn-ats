@@ -3,7 +3,7 @@ import sys
 from argparse import ArgumentParser
 from collections import Counter, defaultdict
 from time import time_ns
-from typing import Any, Iterable, Literal, Self
+from typing import Any, Callable, Iterable, Literal, Self
 
 from ndf_parse import Mod
 from ndf_parse.model import List, Object, Template
@@ -25,12 +25,12 @@ class FamilyDefinitionList(object):
         return result
     
     def get_index(self: Self, family: str, family_index: int) -> int:
-        family = ensure_startswith(family, f'{self.type}Family_{family}')
+        family = ensure_startswith(family, f'{self.type}Family_')
         result: int = 0
         for name, maxIndex in self.data:
             if name == family:
-                if family_index >= maxIndex:
-                    raise Exception(f'Specified index {family_index} is greater than the MaxIndex of specified family {family}!')
+                if family_index > maxIndex:
+                    raise Exception(f'Specified index {family_index} is greater than the MaxIndex, {maxIndex}, of specified family {family}!')
                 return result + family_index
             result += maxIndex
         raise Exception(f"Didn't find family {family} in specified family list!")
@@ -68,6 +68,15 @@ def load_vals(data: Object) -> list[list[float]]:
         result.append(r)
     return result
 
+def load_damage_fn() -> Callable[[tuple[str, int], tuple[str, int]], float]:
+    with mod.edit('GameData/Generated/Gameplay/Gfx/DamageResistance.ndf') as file:
+        print(time_since(program_start))
+        damage_resistance: Object = file[0].value
+        vals = load_vals(damage_resistance)
+        resistances = FamilyDefinitionList(damage_resistance, 'Resistance')
+        damages = FamilyDefinitionList(damage_resistance, 'Damage')
+        return lambda dt, rt: calculate_damage(vals, resistances, damages, rt[0], rt[1], dt[0], dt[1])
+
 def calculate_damage(table: list[list[float]],
                      resistances: FamilyDefinitionList,
                      damages: FamilyDefinitionList,
@@ -77,12 +86,7 @@ def calculate_damage(table: list[list[float]],
                      damage_index: int) -> float:
     return table[damages.get_index(damage_family, damage_index)][resistances.get_index(resistance_family, resistance_index)]
 
-with mod.edit('GameData/Generated/Gameplay/Gfx/DamageResistance.ndf') as file:
-    print(time_since(program_start))
-    damage_resistance: Object = file[0].value
-    vals = load_vals(damage_resistance)
-    resistances = FamilyDefinitionList(damage_resistance, 'Resistance')
-    damages = FamilyDefinitionList(damage_resistance, 'Damage')
+
 
     # col_index = get_index(resistances, sys.argv[3], 'Resistance', int(sys.argv[4]))
     # row_index = get_index(damages, sys.argv[1], 'Damage', int(sys.argv[2]))
@@ -90,12 +94,13 @@ with mod.edit('GameData/Generated/Gameplay/Gfx/DamageResistance.ndf') as file:
     # print(f'Calculated damage suffered by target {sys.argv[3]} {sys.argv[4]} by incoming damage {sys.argv[1]} {sys.argv[2]} is {}')
 
 parser = ArgumentParser(description='Calculates the damage suffered by a WARNO unit given its resistance type and index and the incoming damage type and index.')
-parser.add_argument('--DamageFamily', '--df', type=str, help='The family of the incoming damage')
-parser.add_argument('--DamageIndex', '--di', type=int, help='The index of the incoming damage')
-parser.add_argument('--ResistanceFamily', '--rf', type=str, help="The targeted unit's resistance family")
-parser.add_argument('--ResistanceIndex', '--ri', type=int, help="The index of the targeted unit's resistance")
+parser.add_argument('--DamageFamily', '--df', type=str, help='The family of the incoming damage', required=True)
+parser.add_argument('--DamageIndex', '--di', type=int, help='The index of the incoming damage', required=True)
+parser.add_argument('--ResistanceFamily', '--rf', type=str, help="The targeted unit's resistance family", required=True)
+parser.add_argument('--ResistanceIndex', '--ri', type=int, help="The index of the targeted unit's resistance", required=True)
 
 parser.print_help()
 
 if __name__ == '__main__':
-    pass
+    args = parser.parse_args()
+    print(load_damage_fn()((args.DamageFamily, args.DamageIndex), (args.ResistanceFamily, args.ResistanceIndex)))
