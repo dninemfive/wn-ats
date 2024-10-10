@@ -1,6 +1,7 @@
-from collections import Counter, defaultdict
 import os
 import sys
+from argparse import ArgumentParser
+from collections import Counter, defaultdict
 from time import time_ns
 from typing import Any, Iterable, Literal, Self
 
@@ -12,8 +13,8 @@ FamilyType = Literal['Resistance', 'Damage']
 
 class FamilyDefinitionList(object):
     def __init__(self: Self, data: Object, type: FamilyType):
-        self.data: list[FamilyDefinition] = self.load_family(data)
         self.type = type
+        self.data: list[FamilyDefinition] = self.load_family(data)
 
     def load_family(self: Self, data: Object) -> list[FamilyDefinition]:
         family_list: List = data.by_member(f'{self.type}FamilyDefinitionList').value
@@ -67,6 +68,15 @@ def load_vals(data: Object) -> list[list[float]]:
         result.append(r)
     return result
 
+def calculate_damage(table: list[list[float]],
+                     resistances: FamilyDefinitionList,
+                     damages: FamilyDefinitionList,
+                     resistance_family: str,
+                     resistance_index: int,
+                     damage_family: str,
+                     damage_index: int) -> float:
+    return table[damages.get_index(damage_family, damage_index)][resistances.get_index(resistance_family, resistance_index)]
+
 with mod.edit('GameData/Generated/Gameplay/Gfx/DamageResistance.ndf') as file:
     print(time_since(program_start))
     damage_resistance: Object = file[0].value
@@ -74,13 +84,18 @@ with mod.edit('GameData/Generated/Gameplay/Gfx/DamageResistance.ndf') as file:
     resistances = FamilyDefinitionList(damage_resistance, 'Resistance')
     damages = FamilyDefinitionList(damage_resistance, 'Damage')
 
-    col_index = get_index(resistances, sys.argv[3], 'Resistance', int(sys.argv[4]))
-    row_index = get_index(damages, sys.argv[1], 'Damage', int(sys.argv[2]))
+    # col_index = get_index(resistances, sys.argv[3], 'Resistance', int(sys.argv[4]))
+    # row_index = get_index(damages, sys.argv[1], 'Damage', int(sys.argv[2]))
 
-    print(f'Calculated damage suffered by target {sys.argv[3]} {sys.argv[4]} by incoming damage {sys.argv[1]} {sys.argv[2]} is {}')
-    
+    # print(f'Calculated damage suffered by target {sys.argv[3]} {sys.argv[4]} by incoming damage {sys.argv[1]} {sys.argv[2]} is {}')
 
-print(time_since(program_start))
+parser = ArgumentParser(description='Calculates the damage suffered by a WARNO unit given its resistance type and index and the incoming damage type and index.')
+parser.add_argument('--DamageFamily', '--df', type=str, help='The family of the incoming damage')
+parser.add_argument('--DamageIndex', '--di', type=int, help='The index of the incoming damage')
+parser.add_argument('--ResistanceFamily', '--rf', type=str, help="The targeted unit's resistance family")
+parser.add_argument('--ResistanceIndex', '--ri', type=int, help="The index of the targeted unit's resistance")
+
+parser.print_help()
 
 if __name__ == '__main__':
     pass
