@@ -1,11 +1,10 @@
-from ast import List
 from collections import Counter, defaultdict
 import os
 from time import time_ns
 from typing import Any, Iterable
 
 from ndf_parse import Mod
-from ndf_parse.model import Object, Template
+from ndf_parse.model import List, Object, Template
 
 MOD_PATH = rf'C:\Program Files (x86)\Steam\steamapps\common\WARNO\Mods\default'
 GENERATED_PATH = MOD_PATH # rf'{MOD_PATH}\GameData\Generated'
@@ -23,19 +22,14 @@ dicts: defaultdict[str, Counter[str]] = defaultdict(lambda: Counter())
 
 with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
     print(time_since(program_start))
-    for unit in file:
+    for row in file:
         # name: str = unit.value.by_member('ClassNameForDebug').value
         # print(name)
-        factory: str = 'None'
-        for module in unit.value.by_member('ModulesDescriptors').value:
-            module = module.value
-            if isinstance(module, Object) and module.type == 'TProductionModuleDescriptor':
-                factory = module.by_member('Factory').value.split('/')[1]
-            if isinstance(module, Object) and module.type == 'TUnitUIModuleDescriptor':
-                unit_role = module.by_member('UnitRole').value
-                menu_icon = module.by_member('MenuIconTexture').value
-                type_strategic_count = module.by_member('TypeStrategicCount').value
-                dicts[factory][unit_role] += 1
+        unit: Object = row.value
+        modules_descriptors: List = unit.by_member('ModulesDescriptors').value
+        factory: str = modules_descriptors.find_by_cond(lambda x: isinstance(x.value, Object) and x.value.type == 'TProductionModuleDescriptor').value.by_member('Factory').value.split('/')[1]
+        unit_role: str = modules_descriptors.find_by_cond(lambda x: isinstance(x.value, Object) and x.value.type == 'TUnitUIModuleDescriptor').value.by_member('UnitRole').value
+        dicts[factory][unit_role] += 1
 
 columns = ["'tank_A'",
            "'tank_B'",
