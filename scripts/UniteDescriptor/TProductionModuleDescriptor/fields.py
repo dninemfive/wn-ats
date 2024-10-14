@@ -9,10 +9,11 @@ from ndf_parse.model import List, Object, Template
 
 MOD_PATH = rf'C:\Program Files (x86)\Steam\steamapps\common\WARNO\Mods\default'
 GENERATED_PATH = MOD_PATH # rf'{MOD_PATH}\GameData\Generated'
+MODULE = 'TProductionModuleDescriptor'
 
 mod = Mod(MOD_PATH, MOD_PATH)
 
-FOLDER = 'UniteDescriptor/TUnitUIModuleDescriptor/Fields'
+FOLDER = f'UniteDescriptor/{MODULE}/Fields'
 
 def time_since(start: int) -> str:
     return f'{(time_ns() - start) / 1e9:.3f}s'
@@ -41,9 +42,8 @@ def strip_prefix(s: str, prefix: str) -> str:
     if s.startswith(prefix):
         return s[len(prefix):]
     return s
-        
 
-fields: dict[str, set[str]] = {x: set() for x in ['UnitRole', 'InfoPanelConfigurationToken', 'MenuIconTexture', 'CountryTexture', 'TypeStrategicCount', 'ButtonTexture']}
+fields: dict[str, set[str]] = {x: set() for x in ['Factory']}
 
 with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
     print(time_since(program_start))
@@ -52,10 +52,10 @@ with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
         # print(name)
         unit: Object = row.value
         modules_descriptors: List = unit.by_member('ModulesDescriptors').value
-        ui_module: Object = modules_descriptors.find_by_cond(lambda x: isinstance(x.value, Object)
-                                                     and x.value.type == 'TUnitUIModuleDescriptor').value
+        module: Object = modules_descriptors.find_by_cond(lambda x: isinstance(x.value, Object)
+                                                    and x.value.type == MODULE).value
         for k, v in fields.items():
-            v.add(ui_module.by_member(k).value)
+            v.add(module.by_member(k).value)
 
 for k, v in fields.items():
     with open(os.path.join(FOLDER, f'{k}.txt.data'), 'w') as file:
