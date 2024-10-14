@@ -31,10 +31,16 @@ def isrelevant(op: CellValue) -> bool:
     return isinstance(op, Object) and op.type == 'DepictionOperator_WeaponContinuousFire'
 
 def hypothesis(op: Object) -> bool:
-    a = op.by_member('FireEffectTag').value[len('"weapon_effet_tag'):-1]
-    b = op.by_member('WeaponShootDataPropertyName').value[len('"WeaponShootData_0_'):-1]
-    c = op.by_member('WeaponActiveAndCanShootPropertyName').value[len('"WeaponActiveAndCanShoot_'):-1]
-    return a == b and b == c
+    values: list[int] = []
+    values.append(int(op.by_member('FireEffectTag').value[len('"weapon_effet_tag'):-1]))
+    values.append(int(op.by_member('WeaponShootDataPropertyName').value[len('"WeaponShootData_0_'):-1]))
+    values.append(int(op.by_member('WeaponActiveAndCanShootPropertyName').value[len('"WeaponActiveAndCanShoot_'):-1]))
+    for anchor in op.by_member('Anchors').value:
+        values.append(int(anchor.value[len('"fx_tourelle'):-len('_tir_xx"')]))
+    true: bool = all(x == values[0] for x in values)
+    if not true:
+        print(str(values))
+    return true 
 
 program_start = time_ns()
 
