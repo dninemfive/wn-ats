@@ -16,12 +16,20 @@ FOLDER = 'GeneratedDepictionVehicles'
 def time_since(start: int) -> str:
     return f'{(time_ns() - start) / 1e9:.3f}s'
 
+def summarize(value: List | str) -> str | list[str]:
+    if isinstance(value, str):
+        return value
+    result = []
+    for item in value:
+        result.append(str(item.value))
+    return result
+
 program_start = time_ns()
 
 files = ['Vehicles', 'AerialUnits']
 
 for filename in files:
-    subtypes: defaultdict[str, set[str]] = defaultdict(lambda: set())
+    subtypes: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(lambda: defaultdict(lambda: set()))
 
     with mod.edit(f'GameData/Generated/Gameplay/Gfx/Depictions/GeneratedDepiction{filename}.ndf') as data:
         print(time_since(program_start))
@@ -29,13 +37,15 @@ for filename in files:
             obj: Object = row.value
             if obj.type.startswith('DepictionOperator_'):
                 for member in obj:
-                    subtypes[obj.type].add(member.member)
+                    subtypes[obj.type][member.member].add(str(summarize(member.value)))
 
     lines: list[str] = []
-    for k in sorted(subtypes.keys()):
-        lines.append(k)
-        for v in sorted(subtypes[k]):
-            lines.append(f'\t{v}')
+    for k1 in sorted(subtypes.keys()):
+        lines.append(k1)
+        for k2 in sorted(subtypes[k1].keys()):
+            lines.append(f'\t{k2}')
+            for v in sorted(subtypes[k1][k2]):
+                lines.append(f'\t\t{v}')
 
     with open(os.path.join(FOLDER, f'DepictionOperator_{filename}.data'), 'w') as file:
         file.write('\n'.join(lines))
