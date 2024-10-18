@@ -35,12 +35,25 @@ class Unit(object):
             self.specialties: set[str] = set([x.value for x in ui_module.by_member('SpecialtiesList').value])
         except:
             print(f"\tCouldn't find ui module on {unit.by_member('ClassNameForDebug').value}!")
+        self.capacites: set[str] = set()
+        try:
+            capacites: Object = unit.find_by_cond(lambda x: isinstance(x.value, Object)
+                                                            and x.value.type == 'TModuleSelector'
+                                                            and x.value.by_member('Default').value.type == 'TCapaciteModuleDescriptor').value
+            for row in (capacites.by_member('Default').value
+                                 .by_member('DefaultSkillList').value):
+                self.capacites.add(row.value)
+        except:
+            pass
 
     def has_specialty(self: Self, specialty: str) -> bool:
         return specialty in self.specialties
     
     def has_module(self: Self, module: str) -> bool:
         return module in self.modules
+    
+    def has_capacite(self: Self, capacite: str) -> bool:
+        return capacite in self.capacites
     
 print('Loading data...')
 units: list[Unit] = []
@@ -52,11 +65,14 @@ print('Finding correlations...')
 unit_count: int = len(units)
 all_modules: set[str] = set()
 all_specialties: set[str] = set()
+all_capacites: set[str] = set()
 for unit in units:
     all_modules |= unit.modules
     all_specialties |= unit.specialties
+    all_capacites |= unit.capacites
 all_modules = sorted(all_modules)
 all_specialties = sorted(all_specialties)
+all_capacites = sorted(all_capacites)
 
 def make_row(*items: str | Iterable[str | int]) -> str:
     columns = []
@@ -119,5 +135,16 @@ for specialty in all_specialties:
 print('Writing specialty requirements...')
 with open(f'{FOLDER}/SpecialtyRequirements.txt.data', 'w', encoding='utf') as file:
     file.write('\n'.join(specialty_requirements))
+
+print('Finding capacite requirements...')
+def specialty_requires_capacite(specialty: str, capacite: str) -> bool:
+    for unit in units:
+        if unit.has_specialty(specialty) and not unit.has_capacite(capacite):
+            return False
+    return True
+
+for capacite in all_capacites:
+    for specialty in all_specialties:
+        if specialty_requires_capacite(specialty, capacite):
 
 print('Done!')
