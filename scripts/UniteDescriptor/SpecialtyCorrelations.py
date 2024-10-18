@@ -25,9 +25,9 @@ class Module(object):
         return self.type if self.namespace is None else f'{self.namespace} ({self.type})'
 
 class Unit(object):
-    def __init__(self: Self, unit: Object | ListRow):
-        if isinstance(unit, ListRow):
-            unit = unit.value
+    def __init__(self: Self, row: ListRow):
+        self.name = row.namespace
+        unit: Object = row.value
         modules: List = unit.by_member('ModulesDescriptors').value
         self.modules: set[str] = set([str(Module(x)) for x in modules])
         try:
@@ -71,10 +71,13 @@ def make_row(*items: str | Iterable[str | int]) -> str:
 def count_with_specialty(_units: list[Unit], specialty: str) -> int:
     return len([x for x in _units if x.has_specialty(specialty)])
 
+max_module_len = max([len(x) for x in all_modules])
+
 def rows() -> Iterable[str]:
     yield make_row('↓ Module | Specialty →', all_specialties, 'Total')
     for module in all_modules:
-        units_with_module: list[Unit] = [x for x in units if unit.has_module(module)]
+        units_with_module: list[Unit] = [x for x in units if x.has_module(module)]
+        print(module.ljust(max_module_len),'\t',str(len(units_with_module)).rjust(10))
         yield make_row(module, [count_with_specialty(units_with_module, x) for x in all_specialties], len(units_with_module))
     yield make_row('Total', [count_with_specialty(units, x) for x in all_specialties], len(units))
 
