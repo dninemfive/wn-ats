@@ -48,7 +48,7 @@ with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
     for row in file:
         units.append(Unit(row))
 
-print('Processing data...')
+print('Finding correlations...')
 unit_count: int = len(units)
 all_modules: set[str] = set()
 all_specialties: set[str] = set()
@@ -81,7 +81,43 @@ def rows() -> Iterable[str]:
         yield make_row(module, [count_with_specialty(units_with_module, x) for x in all_specialties], len(units_with_module))
     yield make_row('Total', [count_with_specialty(units, x) for x in all_specialties], len(units))
 
-print('Writing data...')
+print('Writing correlations...')
 with open(f'{FOLDER}/SpecialtyCorrelation.tsv.data', 'w', encoding='utf') as file:
     file.write('\n'.join(rows()))
+
+def all_units_have(module: str) -> bool:
+    for unit in units:
+        if not unit.has_module(module):
+            return False
+    return True
+
+print('Finding specialty requirements...')
+modules_on_all_units: set[str] = set()
+for module in all_modules:
+    if all_units_have(module):
+        modules_on_all_units.add(module)
+
+print('\t', str(modules_on_all_units))
+
+
+def specialty_requires(specialty: str, module: str) -> bool:
+    if module in modules_on_all_units:
+        return False
+    for unit in units:
+        if unit.has_specialty(specialty) and not unit.has_module(module):
+            return False
+    return True
+
+specialty_requirements: list[str] = []
+for specialty in all_specialties:
+    s_modules: list[str] = []
+    for module in all_modules:
+        if specialty_requires(specialty, module):
+            s_modules.append(module)
+    specialty_requirements.append(f'{specialty}: {'\n\t'.join(s_modules)}')
+
+print('Writing specialty requirements...')
+with open(f'{FOLDER}/SpecialtyRequirements.txt.data', 'w', encoding='utf') as file:
+    file.write('\n'.join(specialty_requirements))
+
 print('Done!')
