@@ -41,8 +41,7 @@ PREFIX, QUOTES = 'NdfEnum.with_path', 'NdfEnum.literals'
 CONSTRUCTOR_LEN = max(len(PREFIX), len(QUOTES))
 PREFIX, QUOTES = PREFIX.rjust(CONSTRUCTOR_LEN), QUOTES.rjust(CONSTRUCTOR_LEN)
 MEMBER_LEN = 40
-ENUM_INDENT = "".rjust(CONSTRUCTOR_LEN + MEMBER_LEN + len('= ('))
-LITERAL_INDENT = "".rjust(MEMBER_LEN + len('= Literal['))
+INDENT = "".rjust(CONSTRUCTOR_LEN + MEMBER_LEN + len('= ('))
 
 class MemberDef(object):
     def __init__(self: Self, member_name: str, prefix: str | None = None):
@@ -59,11 +58,11 @@ class MemberDef(object):
         items = [quote(x) for x in sorted(self.values)]
         if self.prefix is not None:
             items.insert(0, quote(self.prefix))
-        return f'{self.member_name.ljust(MEMBER_LEN)}= {constructor}({f',\n{ENUM_INDENT}'.join(items)})'
+        return f'{self.member_name.ljust(MEMBER_LEN)}= {constructor}({f',\n{INDENT}'.join(items)})'
     
     def literal_line(self: Self) -> str:
         items = [quote(x) for x in sorted(self.values)]
-        return f'T_{self.member_name.ljust(MEMBER_LEN)}= Literal[{f',\n{LITERAL_INDENT}'.join(items)}]'
+        return f'{self.member_name.ljust(MEMBER_LEN)}= Literal[{f',\n{INDENT}'.join(items)}]'
 
 
 targets: dict[str, list[MemberDef]] = {
@@ -103,7 +102,7 @@ def tolines(line_selector: Callable[[MemberDef], str]) -> Iterable[str]:
 def write(name: str, selector: Callable[[MemberDef], str]) -> None:
     with open(os.path.join(FOLDER, f'{name}.py.data'), 'w') as file:
         file.write('\n\n'.join(tolines(selector)))
-
+        
 write('enums', MemberDef.enum_line)
 write('literals', MemberDef.literal_line)
 print(time_since(program_start))
