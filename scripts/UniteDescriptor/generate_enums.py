@@ -37,6 +37,12 @@ def strip_prefix(s: str, prefix: str) -> str:
     else:
         print(f"{s} does not start with {prefix}!")
 
+def strip_prefix_and_quotes(s: str, prefix: str | None) -> str:
+    if prefix is not None:
+        return strip_prefix(unquote(s), prefix)
+    else:
+        return unquote(s)
+
 PREFIX, QUOTES = 'NdfEnum.with_path', 'NdfEnum.literals'
 CONSTRUCTOR_LEN = max(len(PREFIX), len(QUOTES))
 PREFIX, QUOTES = PREFIX.rjust(CONSTRUCTOR_LEN), QUOTES.rjust(CONSTRUCTOR_LEN)
@@ -45,14 +51,19 @@ ENUM_INDENT = "".rjust(CONSTRUCTOR_LEN + MEMBER_LEN + len('= ('))
 LITERAL_INDENT = "".rjust(MEMBER_LEN + len('= Literal['))
 
 class MemberDef(object):
-    def __init__(self: Self, member_name: str, prefix: str | None = None):
+    def __init__(self: Self, member_name: str, prefix: str | None = None, is_list_type: bool = False):
         self.member_name = member_name
         self.prefix = prefix
         self.values: set[str] = set()
+        self.is_list_type = is_list_type
 
     def add(self: Self, row: ListRow) -> None:
-        item = strip_prefix(row.value, self.prefix) if self.prefix is not None else unquote(row.value)
-        self.values.add(item)
+        if not self.is_list_type:
+            self.values.add(strip_prefix_and_quotes(row.value, self.prefix))
+        else:
+            for item in row.value:
+                item: ListRow
+                self.values.add(strip_prefix_and_quotes(item.value, self.prefix))
 
     def enum_line(self: Self) -> str:
         constructor: str = PREFIX if self.prefix is not None else QUOTES
@@ -79,7 +90,9 @@ targets: dict[str, list[MemberDef]] = {
     'TUnitUIModuleDescriptor': [
         MemberDef('UnitRole'),
         MemberDef('InfoPanelConfigurationToken'),
-        MemberDef('TypeStrategicCount', 'ETypeStrategicDetailedCount/')
+        MemberDef('TypeStrategicCount', 'ETypeStrategicDetailedCount/'),
+        MemberDef('MenuIconTexture', 'Texture_RTS_H_'),
+        MemberDef('SpecialtiesList', is_list_type=True)
     ]
 }
 
