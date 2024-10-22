@@ -1,6 +1,6 @@
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from typing import Callable, Iterable, Self
+from typing import Callable, Iterable, Literal, Self
 from ndf_parse import Mod
 from ndf_parse.model import List, ListRow, MemberRow, Object
 
@@ -24,17 +24,30 @@ class Module(object):
     def __str__(self: Self) -> str:
         return self.type if self.namespace is None else f'{self.namespace} ({self.type})'
 
+T_ATTR = Literal['modules', 'specialties', 'capacites']
+MODULE, SPECIALTY, CAPACITE = 'modules', 'specialties', 'capacites'
+# alias the constants for readability
+MODULES, SPECIALTIES, CAPACITES = MODULE, SPECIALTY, CAPACITE
+ATTRS = [MODULE, SPECIALTY, CAPACITE]
+
 class Unit(object):
     def __init__(self: Self, row: ListRow):
         self.name = row.namespace
-        unit: Object = row.value
+        for attr in ATTRS:
+            value = getattr(self, f'_init_{attr}')(row.value)
+            print(f'_init_{attr}({row.value}) -> {value}') 
+            setattr(self, attr, value)
+
+    def _init_modules(self: Self, unit: Object):
         modules: List = unit.by_member('ModulesDescriptors').value
         self.modules: set[str] = set([str(Module(x)) for x in modules])
-        try:
-            ui_module: Object = modules.find_by_cond(lambda x: isinstance(x.value, Object) and x.value.type == 'TUnitUIModuleDescriptor').value
-            self.specialties: set[str] = set([x.value for x in ui_module.by_member('SpecialtiesList').value])
-        except:
-            print(f"\tCouldn't find ui module on {unit.by_member('ClassNameForDebug').value}!")
+
+    def _init_specialties(self: Self, unit: Object):
+        modules: List = unit.by_member('ModulesDescriptors').value
+        ui_module: Object = modules.find_by_cond(lambda x: isinstance(x.value, Object) and x.value.type == 'TUnitUIModuleDescriptor').value
+        self.specialties: set[str] = set([x.value for x in ui_module.by_member('SpecialtiesList').value])
+
+    def _init_capacites(self: Self, unit: Object):
         self.capacites: set[str] = set()
         try:
             capacites: Object = unit.find_by_cond(lambda x: isinstance(x.value, Object)
@@ -46,14 +59,8 @@ class Unit(object):
         except:
             pass
 
-    def has_specialty(self: Self, specialty: str) -> bool:
-        return specialty in self.specialties
-    
-    def has_module(self: Self, module: str) -> bool:
-        return module in self.modules
-    
-    def has_capacite(self: Self, capacite: str) -> bool:
-        return capacite in self.capacites
+    def has_(self: Self, attr: T_ATTR, val: str) -> bool:
+        return val in getattr(self, attr)
     
 print('Loading data...')
 units: list[Unit] = []
@@ -63,16 +70,14 @@ with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
 
 print('Finding correlations...')
 unit_count: int = len(units)
-all_modules: set[str] = set()
-all_specialties: set[str] = set()
-all_capacites: set[str] = set()
-for unit in units:
-    all_modules |= unit.modules
-    all_specialties |= unit.specialties
-    all_capacites |= unit.capacites
-all_modules = sorted(all_modules)
-all_specialties = sorted(all_specialties)
-all_capacites = sorted(all_capacites)
+all: dict[T_ATTR, list[str]] = {}
+for attr in ATTRS:
+    items = set()
+    for unit in units:
+        stuff = getattr(unit, attr)
+        if stuff is not None:
+            items |= getattr(unit, attr)
+    all[attr] = sorted(items)
 
 def make_row(*items: str | Iterable[str | int]) -> str:
     columns = []
@@ -85,66 +90,54 @@ def make_row(*items: str | Iterable[str | int]) -> str:
     return '\t'.join(columns)
 
 def count_with_specialty(_units: list[Unit], specialty: str) -> int:
-    return len([x for x in _units if x.has_specialty(specialty)])
+    return len([x for x in _units if x.has_(SPECIALTY, specialty)])
 
-max_module_len = max([len(x) for x in all_modules])
+max_module_len = max([len(x) for x in all[MODULES]])
 
-def rows() -> Iterable[str]:
-    yield make_row('↓ Module | Specialty →', all_specialties, 'Total')
-    for module in all_modules:
-        units_with_module: list[Unit] = [x for x in units if x.has_module(module)]
+def tsv() -> Iterable[str]:
+    yield make_row('↓ Module | Specialty →', all[SPECIALTIES], 'Total')
+    for module in all[MODULES]:
+        units_with_module: list[Unit] = [x for x in units if x.has_(MODULE, module)]
         print(module.ljust(max_module_len),'\t',str(len(units_with_module)).rjust(10))
-        yield make_row(module, [count_with_specialty(units_with_module, x) for x in all_specialties], len(units_with_module))
-    yield make_row('Total', [count_with_specialty(units, x) for x in all_specialties], len(units))
+        yield make_row(module, [count_with_specialty(units_with_module, x) for x in all[SPECIALTIES]], len(units_with_module))
+    yield make_row('Total', [count_with_specialty(units, x) for x in all[SPECIALTIES]], len(units))
 
 print('Writing correlations...')
 with open(f'{FOLDER}/SpecialtyCorrelation.tsv.data', 'w', encoding='utf') as file:
-    file.write('\n'.join(rows()))
+    file.write('\n'.join(tsv()))
 
-def all_units_have(module: str) -> bool:
+def all_units_have(attr: str, module: str) -> bool:
     for unit in units:
-        if not unit.has_module(module):
+        if not unit.has_(attr, module):
             return False
     return True
 
 print('Finding specialty requirements...')
 modules_on_all_units: set[str] = set()
-for module in all_modules:
-    if all_units_have(module):
+for module in all[MODULES]:
+    if all_units_have(MODULE, module):
         modules_on_all_units.add(module)
 
 print('\t', str(modules_on_all_units))
 
 
-def specialty_requires(specialty: str, module: str) -> bool:
-    if module in modules_on_all_units:
-        return False
+def specialty_requires(attr: T_ATTR, specialty: str, value: str) -> bool:
     for unit in units:
-        if unit.has_specialty(specialty) and not unit.has_module(module):
+        if unit.has_(SPECIALTY, specialty) and not unit.has_(attr, value):
             return False
     return True
 
-specialty_requirements: list[str] = []
-for specialty in all_specialties:
-    s_modules: list[str] = []
-    for module in all_modules:
-        if specialty_requires(specialty, module):
-            s_modules.append(module)
-    specialty_requirements.append(f'{specialty}: {'\n\t'.join(s_modules)}')
+def specialty_requirements(attr: T_ATTR) -> Iterable[str]:
+    for specialty in all[SPECIALTIES]:
+        requirements: list[str] = []
+        for value in all[attr]:
+            if specialty_requires(attr, specialty, value):
+                requirements.append(value)
+        yield f'{specialty}: {'\n\t'.join(requirements)}'
 
-print('Writing specialty requirements...')
-with open(f'{FOLDER}/SpecialtyRequirements.txt.data', 'w', encoding='utf') as file:
-    file.write('\n'.join(specialty_requirements))
-
-print('Finding capacite requirements...')
-def specialty_requires_capacite(specialty: str, capacite: str) -> bool:
-    for unit in units:
-        if unit.has_specialty(specialty) and not unit.has_capacite(capacite):
-            return False
-    return True
-
-for capacite in all_capacites:
-    for specialty in all_specialties:
-        if specialty_requires_capacite(specialty, capacite):
+for attr in [MODULES, CAPACITES]:
+    print(f'Writing specialty requirements ({attr})...')
+    with open(f'{FOLDER}/SpecialtyRequirements_{attr}.txt.data', 'w', encoding='utf') as file:
+        file.write('\n'.join(specialty_requirements(attr)))
 
 print('Done!')

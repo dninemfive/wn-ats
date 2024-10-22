@@ -2,7 +2,7 @@ from collections import defaultdict
 from enum import member
 import os
 from time import time_ns
-from typing import Any, Iterable, Literal, Self
+from typing import Any, Callable, Iterable, Literal, Self
 
 from ndf_parse import Mod
 from ndf_parse.model import List, ListRow, Object, Template
@@ -12,7 +12,7 @@ GENERATED_PATH = MOD_PATH # rf'{MOD_PATH}\GameData\Generated'
 
 mod = Mod(MOD_PATH, MOD_PATH)
 
-FOLDER = 'unite_literals'
+FOLDER = 'UniteDescriptor'
 
 def time_since(start: int) -> str:
     return f'{(time_ns() - start) / 1e9:.3f}s'
@@ -53,12 +53,16 @@ class MemberDef(object):
         item = strip_prefix(row.value, self.prefix) if self.prefix is not None else unquote(row.value)
         self.values.add(item)
 
-    def line(self: Self) -> str:
+    def enum_line(self: Self) -> str:
         constructor: str = PREFIX if self.prefix is not None else QUOTES
         items = [quote(x) for x in sorted(self.values)]
         if self.prefix is not None:
             items.insert(0, quote(self.prefix))
         return f'{self.member_name.ljust(MEMBER_LEN)}= {constructor}({f',\n{INDENT}'.join(items)})'
+    
+    def literal_line(self: Self) -> str:
+        items = [quote(x) for x in sorted(self.values)]
+        return f'{self.member_name.ljust(MEMBER_LEN)}= Literal[{f',\n{INDENT}'.join(items)}]'
 
 
 targets: dict[str, list[MemberDef]] = {
@@ -90,11 +94,15 @@ with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
     for unit in file:
         add(unit)
 
-lines: list[str] = []
-for v in targets.values():
-    for m in sorted(v, key=lambda x: x.member_name):
-        lines.append(m.line())
+def tolines(line_selector: Callable[[MemberDef], str]) -> Iterable[str]:
+    for v in targets.values():
+        for m in sorted(v, key=lambda x: x.member_name):
+            yield line_selector(m)
 
-with open(os.path.join(FOLDER, f'literals.py.data'), 'w') as file:
-    file.write('\n\n'.join(lines))
+def write(name: str, selector: Callable[[MemberDef], str]) -> None:
+    with open(os.path.join(FOLDER, f'{name}.py.data'), 'w') as file:
+        file.write('\n\n'.join(tolines(selector)))
+        
+write('enums', MemberDef.enum_line)
+write('literals', MemberDef.literal_line)
 print(time_since(program_start))
