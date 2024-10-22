@@ -63,7 +63,7 @@ class MemberDef(object):
     
     def literal_line(self: Self) -> str:
         items = [quote(x) for x in sorted(self.values)]
-        return f'{self.member_name.ljust(MEMBER_LEN)}= Literal[{f',\n{LITERAL_INDENT}'.join(items)}]'
+        return f'T_{self.member_name.ljust(MEMBER_LEN)}= Literal[{f',\n{LITERAL_INDENT}'.join(items)}]'
 
 
 targets: dict[str, list[MemberDef]] = {
