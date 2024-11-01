@@ -65,6 +65,9 @@ class CostMatrix(object):
     
     def __str__(self: Self) -> str:
         return f'{self.name}\n\t{'\n\t'.join(f'{k.ljust(CATEGORY_PADDING)} {str(v)}' for k, v in self)}'
+    
+    def __sub__(self: Self, other: Self) -> float:
+        return self.total_utility - other.total_utility
 
     @property
     def total_utility(self: Self, places: int = 2) -> float:
@@ -83,15 +86,18 @@ mod = Mod(MOD_PATH, MOD_PATH)
 
 FOLDER = 'Decks/DivisionCostMatrix'
 
-matrices: list[CostMatrix] = []
+matrices: dict[str, CostMatrix] = {}
 
 with mod.edit('GameData/Generated/Gameplay/Decks/DivisionCostMatrix.ndf') as file:
     for row in file:
         if row.namespace.endswith('_multi'):
-            matrices.append(CostMatrix.from_ndf(row))
+            matrix: CostMatrix = CostMatrix.from_ndf(row)
+            matrices[row.namespace] = matrix
 
-for matrix in sorted(matrices, key=lambda x: x.total_utility, reverse=True):
-    print(f'{f'{matrix.name}:'.ljust(DIVISION_NAME_PADDING)} {matrix.total_utility}')
+index = 1
+for matrix in sorted(matrices.values(), key=lambda x: x.total_utility, reverse=True):
+    print(f'{f'{index}.'.ljust(3)} {f'{matrix.name}:'.ljust(DIVISION_NAME_PADDING)} {matrix.total_utility}')
+    index += 1
 
 def median(*fs: float) -> float:
     fs = sorted(fs)
@@ -101,6 +107,7 @@ def median(*fs: float) -> float:
     else:
         return fs[half]
     
-print(f'\n{f'Median:'.ljust(DIVISION_NAME_PADDING)} {median(*[x.total_utility for x in matrices])}')
+print(f'\n{f'Median:'.ljust(DIVISION_NAME_PADDING)} {median(*[x.total_utility for x in matrices.values()])}')
 # todo: calculate standard deviation
 # todo: show utility distributions by category
+print(matrices['MatrixCostName_US_82nd_Airborne_multi'] - matrices['MatrixCostName_US_8th_Inf_multi'])
