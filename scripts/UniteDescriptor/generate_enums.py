@@ -24,6 +24,7 @@ program_start = time_ns()
 
 def quote(s: str) -> str:
     return f"'{s}'"
+
 def unquote(s: str) -> str:
     if s.startswith("'"):
         s = s[1:]
