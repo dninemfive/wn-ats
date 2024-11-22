@@ -37,12 +37,9 @@ class Module(object):
         return self.type is None and self.default_type is None
     
     def __str__(self: Self) -> str:
-        result: str = str(self.type)
-        if self.name is not None:
-            result += f'\t{self.name}'
-        if self.default_type is not None:
-            result += f'\t({self.default_type})'
-        return result
+        return '\t'.join([str(self.type),
+                          '=NA()' if self.name           is None else self.name,
+                          '=NA()' if self.default_type   is None else self.default_type])
 
     def __lt__(self: Self, other: Self):
         return str(self) < str(other)
@@ -63,5 +60,5 @@ with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
             if not module.ignore:
                 module_data.add(module)
 
-for module in sorted(module_data):
-    print(module)
+with open('all_modules.tsv.data', 'w') as file:
+    file.write('\n'.join(str(x) for x in sorted(module_data)))
