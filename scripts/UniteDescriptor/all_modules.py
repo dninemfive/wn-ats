@@ -29,8 +29,11 @@ class Module(object):
             self.type = row.value.type
             if row.value.type == 'TModuleSelector':
                 default = row.value.by_member('Default').value
-                if isinstance(default, Object):
+                print(default.__class__.__name__)
+                try:
                     self.default_type == default.type
+                except:
+                    pass
     
     @property
     def ignore(self: Self) -> bool:
@@ -60,5 +63,5 @@ with mod.edit('GameData/Generated/Gameplay/Gfx/UniteDescriptor.ndf') as file:
             if not module.ignore:
                 module_data.add(module)
 
-with open('all_modules.tsv.data', 'w') as file:
+with open(os.path.join(FOLDER, 'all_modules.tsv.data'), 'w') as file:
     file.write('\n'.join(str(x) for x in sorted(module_data)))
